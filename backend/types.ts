@@ -10,5 +10,4 @@ export interface ReceivedMessage {
 	username: string,
 	message: string,
 	room: string,
-	__createdTime__: number
 }

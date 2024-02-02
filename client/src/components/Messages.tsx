@@ -4,9 +4,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChatProps } from '@/types';
 
 interface MessageType {
-    message: string;
+    content: string;
     username: string;
-    __createdTime__: number;
+    createdAt: string;
+    id: number;
 }
 
 const MessageContainer = ({ socket }: Pick<ChatProps, 'socket'>) => {
@@ -34,7 +35,12 @@ const MessageContainer = ({ socket }: Pick<ChatProps, 'socket'>) => {
         };
     }, [socket, containerRef]);
 
-    const formatDate = (time: number) => {
+    useEffect(() => {
+        socket.on('old_messages', (messages: MessageType[]) => {
+            setMessagesReceived(messages);
+        });
+    }, [socket]);
+    const formatDate = (time: string) => {
         return new Date(time).toLocaleString();
     };
 
@@ -42,13 +48,13 @@ const MessageContainer = ({ socket }: Pick<ChatProps, 'socket'>) => {
         <ScrollArea className='h-[80%]'>
             <div className='space-y-8'>
                 {messagesReceived.map((m) => (
-                    <Card key={m.message} className='w-full'>
+                    <Card key={m.id} className='w-full'>
                         <CardHeader className='flex flex-row justify-between'>
                             {' '}
                             <CardTitle> {m.username} </CardTitle>{' '}
-                            {formatDate(m.__createdTime__)}
+                            {formatDate(m.createdAt)}
                         </CardHeader>
-                        <CardContent>{m.message}</CardContent>
+                        <CardContent>{m.content}</CardContent>
                     </Card>
                 ))}
                 <div ref={containerRef} />

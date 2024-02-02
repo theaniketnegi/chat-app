@@ -3,11 +3,16 @@ import cors from 'cors';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 import { ReceivedMessage, UserType, UserWithoutIdType } from './types';
+import { dbConnect } from './dbConfig';
+import Message from './messageModel';
+
 const app = express();
 app.use(cors());
 
 const server = http.createServer(app);
-let chatRoom = '';
+
+dbConnect();
+
 let allUsers: UserType[] = [];
 
 const io = new Server(server, {
@@ -19,27 +24,32 @@ const io = new Server(server, {
 
 io.on('connection', (socket: Socket) => {
     console.log(`Client ${socket.id} connected`);
-    socket.on('join_room', (data: UserWithoutIdType) => {
+    socket.on('join_room', async (data: UserWithoutIdType) => {
         const { username, room } = data;
         socket.join(room);
-        let __createdTime__ = Date.now();
-        socket.to(room).emit('receive_message', {
-            message: `${username} joined ${room}`,
-            username: 'CHATBOT',
-            __createdTime__,
-        });
 
-        socket.emit('receive_message', {
-            message: `Welcome ${username}`,
-            username: 'CHATBOT',
-            __createdTime__,
-        });
+        const messages = await Message.findAll({ limit: 50, where: { room } });
+        const oldMessages = messages.map((m) => m.toJSON());
+        socket.emit('old_messages', oldMessages);
 
-        socket.on('send_message', (data: ReceivedMessage) => {
-            const { __createdTime__, room, message, username } = data;
-            io.in(room).emit('receive_message', data);
+        const welcomeMessage = await Message.create({
+            username: 'BOT',
+            room,
+            content: `${username} joined ${room}. Welcome ${username}.`,
         });
-        chatRoom = room;
+        socket.to(room).emit('receive_message', welcomeMessage.toJSON());
+        socket.emit('receive_message', welcomeMessage.toJSON());
+        socket.on('send_message', async (data: ReceivedMessage) => {
+            const { room, message, username } = data;
+            const storedMessage = await Message.create({
+                username,
+                room,
+                content: message,
+            });
+            io.in(room).emit('receive_message', storedMessage.toJSON());
+
+            console.log(storedMessage.toJSON());
+        });
         allUsers.push({ id: socket.id, username, room });
         const chatRoomUsers = allUsers.filter((u) => u.room === room);
         socket.to(room).emit('chatroom_users', chatRoomUsers);
@@ -51,4 +61,6 @@ app.get('/', (_req, res) => {
     res.send(`Hello world`);
 });
 
-server.listen(4000, () => `Server started at 4000`);
+server.listen(4000, () => {
+    console.log(`Server started at 4000`);
+});

@@ -9,12 +9,10 @@ const SendMessage = ({ username, room, socket }: ChatProps) => {
 
     const sendMessage = () => {
         if (message.trim() !== '') {
-            const __createdTime__ = Date.now();
             socket.emit('send_message', {
                 username,
                 room,
                 message,
-                __createdTime__,
             });
             setMessage('');
         }
