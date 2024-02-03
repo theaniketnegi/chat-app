@@ -16,9 +16,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Toaster } from '@/components/ui/toaster';
 import { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Socket } from 'socket.io-client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface HomeProps {
     username: string;
@@ -36,15 +38,22 @@ const CardWithForm = ({
     socket,
 }: HomeProps) => {
     const navigate = useNavigate();
-
+    const { toast } = useToast();
     const joinRoom = () => {
-        if (username !== '' && room !== '')
+        if (username.trim() !== '' && room.trim() !== '') {
             socket.emit('join_room', { username, room });
-        navigate('/chat', { replace: true });
+            navigate('/chat', { replace: true });
+        } else {
+            toast({
+                title: 'Fields cannot be empty',
+                description: 'Username or room is empty',
+            });
+        }
     };
 
     return (
         <div className='h-screen flex justify-center items-center'>
+            <Toaster />
             <Card className='w-[350px]'>
                 <CardHeader className='text-center'>
                     <CardTitle>Chatroom</CardTitle>
@@ -66,7 +75,7 @@ const CardWithForm = ({
                             </div>
                             <div className='flex flex-col space-y-1.5'>
                                 <Label htmlFor='framework'>Room</Label>
-                                <Select onValueChange={setRoom}>
+                                <Select onValueChange={setRoom} value={room}>
                                     <SelectTrigger id='framework'>
                                         <SelectValue placeholder='Select' />
                                     </SelectTrigger>

@@ -18,10 +18,10 @@ const SendMessage = ({ username, room, socket }: ChatProps) => {
         }
     };
     return (
-        <div className='grid w-full gap-2'>
+        <div className='grid w-full gap-2 z-10'>
             <Textarea
                 placeholder='Type your message here.'
-                className='resize-none text-white'
+                className='resize-none text-card-foreground'
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
             />
